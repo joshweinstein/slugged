@@ -1,7 +1,7 @@
 module Slugged
   module ActiveRecordMethods
     AR_CLASS_ATTRIBUTE_NAMES = %w(cached_slug_column slug_source slug_convertor_proc default_uuid_slug use_slug_history sync_slugs slug_scope use_slug_cache use_slug_to_param editable).map(&:to_sym)
-    
+
     def is_sluggable(source = :name, options = {})
       options.symbolize_keys!
       class_attribute *AR_CLASS_ATTRIBUTE_NAMES
@@ -18,9 +18,9 @@ module Slugged
       include Slugged::Caching     if use_slug_cache
       before_save :autogenerate_slug
     end
-    
+
     module InstanceMethods
-      
+
       def to_slug
         cached_value = send cached_slug_column
         cached_value.present? ? cached_value : id.to_s
@@ -42,12 +42,12 @@ module Slugged
       def convert_cached_slug
         write_attribute self.cached_slug_column, self.class.slug_value_for(send(self.cached_slug_column))
       end
-      
+
       def generate_slug!
         generate_slug
         save :validate => false
       end
-      
+
       def autogenerate_slug
         if should_convert_cached_slug?
           convert_cached_slug
@@ -63,41 +63,41 @@ module Slugged
       def should_generate_slug?
         send(self.cached_slug_column).blank? || (self.sync_slugs && send(:"#{self.slug_source}_changed?")) && !should_convert_cached_slug?
       end
-      
+
       def has_better_slug?
         found_via_slug.present? && found_via_slug != to_slug
       end
-      
+
       def slug_scope_key(nested_scope = [])
         self.class.slug_scope_key(nested_scope)
       end
-      
+
     end
-    
+
     module ClassMethods
-      
+
       def update_all_slugs!
         find_each { |r| r.generate_slug! }
       end
-      
+
       def slug_scope_key(nested_scope = [])
         ([table_name, slug_scope] + Array(nested_scope)).flatten.compact.join("|")
       end
-      
+
       def slug_scope_relation(record)
-        has_slug_scope? ? where(slug_scope => record.send(slug_scope)) : scoped
+        has_slug_scope? ? where(slug_scope => record.send(slug_scope)) : all
       end
-      
+
       def slug_value_for(value)
         value.present? ? self.slug_convertor_proc.call(value) : value
       end
 
       protected
-      
+
       def has_slug_scope?
         self.slug_scope.present?
       end
-      
+
       def set_slug_options(options)
         set_slug_convertor options[:convertor]
         self.cached_slug_column = (options[:slug_column] || :cached_slug).to_sym
@@ -109,7 +109,7 @@ module Slugged
         self.use_slug_history   = !!options.fetch(:history, Slugged::Slug.usable?)
         self.editable           = !!options.fetch(:editable, false)
       end
-      
+
       def set_slug_convertor(convertor)
         if convertor.present?
           unless convertor.respond_to?(:call)
@@ -123,6 +123,6 @@ module Slugged
           end
         end
       end
-    end    
+    end
   end
 end
